@@ -15,8 +15,7 @@ public class WindowWorker {
     private long intervalInMs;//间隔时间
     private long windowsCount;//窗口数量
     private long windowsInterval;//窗口间隔时间
-
-    private ReentrantLock countLock = new ReentrantLock();//
+    private ReentrantLock resetLock = new ReentrantLock();//重置时使用
 
     public WindowWorker(long intervalInMs, long windowsCount) {
         this.intervalInMs = intervalInMs;
@@ -87,14 +86,14 @@ public class WindowWorker {
                     return bucket;
                 } else if (bucket.windowStart() < startTime) {
                     try {
-                        countLock.tryLock();
+                        resetLock.tryLock();
                         bucket.reset(startTime, windowsInterval);
                         return bucket;
                     } catch (Exception ex) {
                         //让出当前cpu分配的时间分片，等待下次cpu唤醒（可能下次还是该线程执行，只是标识为可让出）
                         Thread.yield();
                     } finally {
-                        countLock.unlock();
+                        resetLock.unlock();
                     }
                 } else {
                     throw new RuntimeException(String.format("bucket window start[%s] beyond current time[%s]", bucket.windowStart(), currentTime));

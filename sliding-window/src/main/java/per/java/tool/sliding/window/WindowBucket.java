@@ -20,14 +20,27 @@ public class WindowBucket {
         this.counter=new LongAdder();
     }
 
+    /**
+     * 计数器进行累加
+     * @param count 本次增加的次数
+     */
     public void add(long count){
         counter.add(count);
     }
 
+    /**
+     * 获取当前的次数
+     * @return 当前的次数
+     */
     public long get(){
         return counter.sum();
     }
 
+    /**
+     * 重置窗口对象
+     * @param startTime 窗口新的开始时间
+     * @param intervalTime 窗口的间隔时间
+     */
     public void reset(long startTime,long intervalTime){
         this.windowStartInMs=startTime;
         this.intervalInMs=intervalTime;
