@@ -42,10 +42,9 @@ public class StringRedisHandler extends AbstractRedis implements IStringRedis {
 
     @Override
     public <T> T getListOrMap(String key, TypeToken<T> typeToken) {
-        if(typeToken.getRawType().isAssignableFrom(List.class)||typeToken.getRawType().isAssignableFrom(Map.class)){
-            return gson.fromJson(redisTemplate.opsForValue().get(key), typeToken.getType());
-        }
-        throw new IllegalArgumentException("just List or Map typeToken!!pls look the note.");
+        Assert.hasText(key,REDIS_KEY_EMPTY);
+        Assert.notNull(typeToken,"typeToken is null!");
+        return toObject(redisTemplate.opsForValue().get(key), typeToken);
     }
 
     @Override

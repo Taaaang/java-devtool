@@ -15,6 +15,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import per.redis.tool.RedisToolBootstrap;
 import per.redis.tool.support.DefaultRedisSupport;
 import per.redis.tool.support.handler.IBasicRedis;
+import per.redis.tool.support.handler.IHashRedis;
 import per.redis.tool.support.handler.IListRedis;
 import per.redis.tool.support.handler.ListRedisHandler;
 
@@ -43,6 +44,9 @@ public class RedisTest {
 
     @Autowired
     private IListRedis listRedisHandler;
+
+    @Autowired
+    private IHashRedis hashRedis;
 
     @Autowired
     private Gson gson;
@@ -253,6 +257,65 @@ public class RedisTest {
         testInfo.setList(list);
         listRedisHandler.leftPush(key,testInfo);
         TestInfo testInfo1 = listRedisHandler.rightPop(key, TestInfo.class);
+        System.out.println();
+    }
+
+    @Test
+    public void testOpsHashPutAndGet(){
+        String key="hashPutAndGet";
+        basicRedis.del(key);
+        template.opsForHash().put(key,"abc",gson.toJson(new TestInfo("aa",10)));
+        Object abc = template.opsForHash().get(key, "abc");
+        System.out.println();
+    }
+
+    @Test
+    public void testOpsHash(){
+        String key="hashListOrMap";
+        String mapKey="hashMap";
+        basicRedis.del(key);
+
+        List<TestInfo> list=new ArrayList<>();
+        list.add(new TestInfo("abc",10));
+        list.add(new TestInfo("ab",20));
+        hashRedis.hashPut(key,"hashKey",list);
+        List<TestInfo> list1 = hashRedis.hashGetListOrMap(key, "hashKey", new TypeToken<List<TestInfo>>(){});
+        System.out.println();
+
+        hashRedis.hashPut(mapKey,"one",new TestInfo("a",31));
+        hashRedis.hashPut(mapKey,"two",new TestInfo("b",31));
+        hashRedis.hashPut(mapKey,"three",new TestInfo("c",31));
+        hashRedis.hashPut(mapKey,"four",new TestInfo("d",31));
+        final TestInfo testInfo = hashRedis.hashGet(mapKey, "one", TestInfo.class);
+        List<Object> hashKeys=new ArrayList<>();
+        hashKeys.add("one");
+        hashKeys.add("two");
+        hashKeys.add("three");
+        hashKeys.add("four");
+        final List<TestInfo> list2 = hashRedis.hashMultiGet(mapKey,hashKeys , TestInfo.class);
+        System.out.println();
+
+        final Long aLong = hashRedis.hashSize(mapKey);
+        final Map<String, String> stringStringMap = hashRedis.hashGet(mapKey);
+        System.out.println();
+    }
+
+    @Test
+    public void testOpsHashInDecrement(){
+        String key="hashInDecrement";
+        hashRedis.hashPut(key,"in",2);
+        hashRedis.hashPut(key,"de",2);
+
+        final Long in = hashRedis.hashIncrement(key, "in");
+        final Long de = hashRedis.hashDecrement(key, "de");
+        final Long in1 = hashRedis.hashIncrement(key, "in", 2);
+        final Long de1 = hashRedis.hashDecrement(key, "de", 2);
+        System.out.println();
+
+        hashRedis.hashPut(key,"st","abc");
+       // final Long st = hashRedis.hashIncrement(key, "st");
+        hashRedis.hashPut(key,"sd","1");
+        final Long sd = hashRedis.hashIncrement(key, "sd");
         System.out.println();
     }
 

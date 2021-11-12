@@ -10,6 +10,9 @@ import java.util.Map;
 
 /**
  * redis所有操作的集合类
+ * Basic操作类 {@link BasicRedisHandler}
+ * String操作类{@link StringRedisHandler}
+ * List操作类{@link ListRedisHandler}
  * @Author:TangFenQi
  * @Date:2021/11/11 10:08
  **/
@@ -17,11 +20,6 @@ import java.util.Map;
 public class DefaultRedisSupport implements IBasicRedis, IStringRedis, IListRedis {
 
     private RedisTemplate<String,String> redisTemplate;
-
-    private static final String GET_NOTICE_LIST_OR_MAP="pls don't use this method! pls use getListOrMap() method.";
-    private static final String REDIS_KEY_EMPTY="redis key is empty!";
-    private static final String REDIS_VALUE_EMPTY="redis value is empty!";
-
 
     private IBasicRedis basicRedis;
     private IStringRedis stringRedis;

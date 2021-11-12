@@ -1,6 +1,7 @@
 package per.redis.tool.support.handler;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.springframework.data.redis.core.RedisTemplate;
 
 /**
@@ -12,9 +13,11 @@ public abstract class AbstractRedis {
     protected RedisTemplate<String,String> redisTemplate;
     protected Gson gson;
 
-    protected static final String GET_NOTICE_LIST_OR_MAP="pls don't use this method! pls use getListOrMap() method.";
+    protected static final String GET_NOTICE_LIST_OR_MAP="pls don't use this method, just look api note! pls use ListOrMap() method.";
     protected static final String REDIS_KEY_EMPTY="redis key is empty!";
     protected static final String REDIS_VALUE_EMPTY="redis value is empty!";
+    protected static final String REDIS_HASH_KEY_EMPTY="redis hash key is empty!";
+    protected static final String REDIS_TRANSFORM_CLASS_EMPTY="transform class is empty!";
 
     public AbstractRedis(RedisTemplate<String, String> redisTemplate, Gson gson) {
         this.redisTemplate = redisTemplate;
@@ -38,5 +41,15 @@ public abstract class AbstractRedis {
             return null;
         }
         return gson.fromJson(json,clazz);
+    }
+
+    protected <T> T toObject(String json, TypeToken<T> typeToken){
+        if(json==null){
+            return null;
+        }
+        if(typeToken==null){
+            return null;
+        }
+        return gson.fromJson(json,typeToken.getType());
     }
 }
