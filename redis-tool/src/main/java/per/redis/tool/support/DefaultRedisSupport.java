@@ -1,159 +1,196 @@
 package per.redis.tool.support;
 
-import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
+import per.redis.tool.support.handler.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
+ * redis所有操作的集合类
  * @Author:TangFenQi
  * @Date:2021/11/11 10:08
  **/
 @Component
-public class DefaultRedisSupport implements IRedisSupport {
+public class DefaultRedisSupport implements IBasicRedis, IStringRedis, IListRedis {
 
     private RedisTemplate<String,String> redisTemplate;
 
     private static final String GET_NOTICE_LIST_OR_MAP="pls don't use this method! pls use getListOrMap() method.";
     private static final String REDIS_KEY_EMPTY="redis key is empty!";
     private static final String REDIS_VALUE_EMPTY="redis value is empty!";
-    @Autowired
-    private Gson gson;
-
-    public DefaultRedisSupport(RedisTemplate<String,String> redisTemplate) {
-        this.redisTemplate=redisTemplate;
-    }
 
 
-    private String toJson(Object value){
-        if(value.getClass().isAssignableFrom(String.class) ) {
-            return (String) value;
-        }else {
-            return gson.toJson(value);
-        }
-    }
+    private IBasicRedis basicRedis;
+    private IStringRedis stringRedis;
+    private IListRedis listRedis;
 
-    @Override
-    public void set(String key, Object value) {
-        Assert.hasText(key,REDIS_KEY_EMPTY);
-        Assert.notNull(value,REDIS_VALUE_EMPTY);
-
-        redisTemplate.opsForValue().set(key,toJson(value));
-    }
-
-    @Override
-    public <T> T get(String key, Class<T> clazz) {
-        Assert.notNull(key,REDIS_KEY_EMPTY);
-        Assert.isTrue(!List.class.isAssignableFrom(clazz),GET_NOTICE_LIST_OR_MAP);
-        Assert.isTrue(!Map.class.isAssignableFrom(clazz),GET_NOTICE_LIST_OR_MAP);
-        return gson.fromJson(redisTemplate.opsForValue().get(key),clazz);
-    }
-
-    @Override
-    public <T> T getListOrMap(String key, TypeToken<T> typeToken) {
-        if(typeToken.getRawType().isAssignableFrom(List.class)||typeToken.getRawType().isAssignableFrom(Map.class)){
-            return gson.fromJson(redisTemplate.opsForValue().get(key), typeToken.getType());
-        }
-        throw new IllegalArgumentException("just List or Map typeToken!!pls look the note.");
+    public DefaultRedisSupport(BasicRedisHandler basicRedis,
+                               StringRedisHandler stringRedis,
+                               ListRedisHandler listRedis) {
+        this.basicRedis = basicRedis;
+        this.stringRedis=stringRedis;
+        this.listRedis=listRedis;
     }
 
 
     @Override
-    public long del(String... key) {
-        Assert.notEmpty(key,REDIS_KEY_EMPTY);
-        return redisTemplate.delete(CollectionUtils.arrayToList(key));
+    public long del(String... keys) {
+        return basicRedis.del(keys);
     }
 
     @Override
     public boolean exists(String key) {
-        Assert.hasText(key,REDIS_KEY_EMPTY);
-        return redisTemplate.hasKey(key);
+        return basicRedis.exists(key);
+    }
+
+    /**
+     * String 操作集合
+     */
+
+    @Override
+    public void set(String key, Object value) {
+        stringRedis.set(key,value);
+    }
+
+    @Override
+    public <T> T get(String key, Class<T> clazz) {
+        return stringRedis.get(key,clazz);
+    }
+
+    @Override
+    public <T> T getListOrMap(String key, TypeToken<T> typeToken) {
+        return stringRedis.getListOrMap(key,typeToken);
     }
 
     @Override
     public void mset(Map<String, Object> map) {
-        Assert.notEmpty(map,REDIS_VALUE_EMPTY);
-
-        Map<String,String> stringMap=new HashMap<>(map.size());
-        map.entrySet().stream().forEach(v->{
-            stringMap.put(v.getKey(),toJson(v.getValue()));
-        });
-        redisTemplate.opsForValue().multiSet(stringMap);
+        stringRedis.mset(map);
     }
 
     @Override
     public Map<String, String> mgetToMap(String... keys) {
-        Assert.notEmpty(keys,REDIS_KEY_EMPTY);
-        Map<String,String> map=new HashMap<>();
-        List<String> list = redisTemplate.opsForValue().multiGet(CollectionUtils.arrayToList(keys));
-        for (int i = 0; i < list.size(); i++) {
-            map.put(keys[i],list.get(i));
-        }
-        return map;
+        return stringRedis.mgetToMap(keys);
     }
 
     @Override
     public List<String> mget(String... keys) {
-        Assert.notEmpty(keys,REDIS_KEY_EMPTY);
-        return (List<String>)redisTemplate.opsForValue().multiGet(CollectionUtils.arrayToList(keys));
+        return stringRedis.mget(keys);
     }
 
     @Override
     public boolean expire(String key, Long expiredTime) {
-        Assert.hasText(key,REDIS_KEY_EMPTY);
-        Assert.notNull(expiredTime,"expiredTime is null!");
-        Assert.isTrue(expiredTime>0,String.format("expired time less than or equal 0 ! expiredTime=[%s]",expiredTime));
-        return redisTemplate.expire(key,expiredTime, TimeUnit.SECONDS);
+        return stringRedis.expire(key,expiredTime);
     }
 
     @Override
-    public void setAndExpire(String key, Long expiredTime, Object value) {
-        Assert.hasText(key,REDIS_KEY_EMPTY);
-        Assert.notNull(expiredTime,"expiredTime is empty");
-        Assert.notNull(value,REDIS_VALUE_EMPTY);
-        Assert.isTrue(expiredTime>0,String.format("expiredTime less than or equal 0! expiredTime=[%s]",expiredTime));
-        redisTemplate.opsForValue().set(key,toJson(value),expiredTime,TimeUnit.SECONDS);
+    public void setAndExpire(String key, Long expireTime, Object value) {
+        stringRedis.setAndExpire(key,expireTime,value);
     }
 
     @Override
     public boolean setIfAbsent(String key, Object value) {
-        Assert.hasText(key,REDIS_KEY_EMPTY);
-        Assert.notNull(value,REDIS_VALUE_EMPTY);
-        return redisTemplate.opsForValue().setIfAbsent(key,toJson(value));
+        return stringRedis.setIfAbsent(key,value);
     }
 
     @Override
-    public long increment(String key) {
-        Assert.notNull(key,REDIS_KEY_EMPTY);
-        return redisTemplate.opsForValue().increment(key);
+    public Long increment(String key) {
+        return stringRedis.increment(key);
     }
 
     @Override
-    public long incrementByNumber(String key, int number) {
-        Assert.notNull(key,REDIS_KEY_EMPTY);
-        Assert.isTrue(number>0,String.format("number less than or equal 0 ! number=[%s]",number));
-        return redisTemplate.opsForValue().increment(key,number);
+    public Long incrementByNumber(String key, int number) {
+        return stringRedis.incrementByNumber(key,number);
     }
 
     @Override
-    public long decrement(String key) {
-        Assert.hasText(key,REDIS_KEY_EMPTY);
-        return redisTemplate.opsForValue().decrement(key);
+    public Long decrement(String key) {
+        return stringRedis.decrement(key);
     }
 
     @Override
-    public long decrement(String key, int number) {
-        Assert.hasText(key,REDIS_KEY_EMPTY);
-        Assert.isTrue(number>0,String.format("number less than or equal 0 ! number=[%s]",number));
-        return redisTemplate.opsForValue().decrement(key,number);
+    public Long decrementByNumber(String key, int number) {
+        return stringRedis.decrementByNumber(key,number);
+    }
+
+    /**
+     * List操作集合
+     */
+
+    @Override
+    public Long rightPush(String key, Object value) {
+        return listRedis.rightPush(key,value);
+    }
+
+    @Override
+    public Long rightPush(String key, Object positionValue, Object value) {
+        return listRedis.rightPush(key,positionValue,value);
+    }
+
+    @Override
+    public Long rightPushAll(String key, List<Object> values) {
+        return listRedis.rightPushAll(key,values);
+    }
+
+    @Override
+    public Long rightPushIfPresent(String key, Object value) {
+        return listRedis.rightPushIfPresent(key,value);
+    }
+
+    @Override
+    public <T> T rightPopAndLeftPush(String rightKey, String leftKey, Class<T> clazz) {
+        return listRedis.rightPopAndLeftPush(rightKey,leftKey,clazz);
+    }
+
+    @Override
+    public Long leftPush(String key, Object value) {
+        return listRedis.leftPush(key,value);
+    }
+
+    @Override
+    public Long leftPush(String key, Object positionValue, Object value) {
+        return listRedis.leftPush(key,positionValue,value);
+    }
+
+    @Override
+    public <T> T rightPop(String key, Class<T> clazz) {
+        return listRedis.rightPop(key,clazz);
+    }
+
+    @Override
+    public <T> T leftPop(String key, Class<T> clazz) {
+        return listRedis.leftPop(key,clazz);
+    }
+
+    @Override
+    public Long leftPushIfPresent(String key, Object value) {
+        return listRedis.leftPushIfPresent(key,value);
+    }
+
+    @Override
+    public <T> List<T> range(String key, long start, long end, Class<T> clazz) {
+        return listRedis.range(key,start,end,clazz);
+    }
+
+    @Override
+    public void trim(String key, long start, long end) {
+        listRedis.trim(key,start,end);
+    }
+
+    @Override
+    public Long listLength(String key) {
+        return listRedis.listLength(key);
+    }
+
+    @Override
+    public <T> T listIndex(String key, long index, Class<T> clazz) {
+        return listRedis.listIndex(key,index,clazz);
+    }
+
+    @Override
+    public Long listRemove(String key, int count, Object value) {
+        return listRedis.listRemove(key,count,value);
     }
 }

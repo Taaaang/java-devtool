@@ -1,15 +1,11 @@
-package per.redis.tool.support;
+package per.redis.tool.support.handler;
 
 import com.google.gson.reflect.TypeToken;
 
 import java.util.List;
 import java.util.Map;
 
-public interface IRedisSupport {
-
-    /**
-     * redis 的 String值操作
-     */
+public interface IStringRedis {
 
     /**
      * set value值
@@ -35,21 +31,6 @@ public interface IRedisSupport {
      * @return 返回实例对象 List<?>
      */
     <T> T getListOrMap(String key, TypeToken<T> typeToken);
-
-
-    /**
-     * 删除多个或单个key
-     * @param keys key值集合
-     * @return 删除的条数
-     */
-    long del(String... keys);
-
-    /**
-     * 是否存在某个key
-     * @param key key值
-     * @return true：存在 false：不存在
-     */
-    boolean exists(String key);
 
     /**
      * 批量写入
@@ -98,31 +79,31 @@ public interface IRedisSupport {
     /**
      * 对key的值进行自增
      * @param key key值
-     * @return 自增后的值
+     * @return 自增后的值, **注意**当使用r
      */
-    long increment(String key);
+    Long increment(String key);
 
     /**
      * 对key的值加上number
      * @param key key值
      * @param number 需要加上的值
-     * @return 加上后的值
+     * @return 加上后的值 **注意**当使用r
      */
-    long incrementByNumber(String key, int number);
+    Long incrementByNumber(String key, int number);
 
     /**
      * 对key的值进行自减
      * @param key key值
-     * @return 减少后的值
+     * @return 减少后的值 **注意**当使用r
      */
-    long decrement(String key);
+    Long decrement(String key);
 
     /**
      * 对key的值进行减少number
      * @param key key 值
      * @param number 进行减少的值
-     * @return 减少后的值
+     * @return 减少后的值 **注意**当使用r
      */
-    long decrement(String key,int number);
+    Long decrementByNumber(String key,int number);
 
 }
