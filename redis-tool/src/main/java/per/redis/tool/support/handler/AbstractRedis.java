@@ -33,6 +33,17 @@ public abstract class AbstractRedis {
         }
     }
 
+    protected String[] toJson(Object[] values){
+        if(values==null||values.length==0){
+            return new String[0];
+        }
+        String[] strings=new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            strings[i]=toJson(values[i]);
+        }
+        return strings;
+    }
+
     protected <T> T toObject(String json,Class<T> clazz){
         if(json==null){
             return null;
